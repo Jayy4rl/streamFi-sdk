@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useStreamFiClient } from '../context/useStreamFiClient.js';
 
+export type ProposalStatus = 'active' | 'passed' | 'failed' | 'pending';
+
 export interface GovernorProposal {
   id: string;
   description: string;
   targetConfig: Record<string, unknown>;
-  status: 'active' | 'passed' | 'failed' | 'pending';
+  status: ProposalStatus;
   proposer: string;
   startTime: number;
   endTime: number;
@@ -24,8 +26,14 @@ export interface UseGovernorProposalsResult {
  * #836 — Hook wrapping GovernorModule.getProposals().
  * Provides React bindings to query active governor proposals for
  * protocol governance inspection.
+ *
+ * @param pollIntervalMs - Polling interval in milliseconds. Default 30_000.
+ * @param statusFilter - Optional array of proposal statuses to filter by.
  */
-export function useGovernorProposals(pollIntervalMs = 30_000): UseGovernorProposalsResult {
+export function useGovernorProposals(
+  pollIntervalMs = 30_000,
+  statusFilter?: ProposalStatus[],
+): UseGovernorProposalsResult {
   const { client, isReady } = useStreamFiClient();
   const [proposals, setProposals] = useState<GovernorProposal[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,7 +57,10 @@ export function useGovernorProposals(pollIntervalMs = 30_000): UseGovernorPropos
       .getProposals()
       .then((data) => {
         if (requestIdRef.current !== requestId) return;
-        setProposals(data);
+        const filtered = statusFilter
+          ? data.filter((p) => statusFilter.includes(p.status))
+          : data;
+        setProposals(filtered);
         setLoading(false);
       })
       .catch((err: unknown) => {
@@ -57,7 +68,7 @@ export function useGovernorProposals(pollIntervalMs = 30_000): UseGovernorPropos
         setError(err instanceof Error ? err : new Error(String(err)));
         setLoading(false);
       });
-  }, [client, isReady]);
+  }, [client, isReady, statusFilter]);
 
   useEffect(() => {
     fetchProposals();

@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { StreamFiContext } from '../context/StreamFiProvider.js';
 import type { Network } from '@conduit-protocol/sdk';
 
@@ -11,6 +11,11 @@ export interface UseNetworkSwitcherResult {
   isSupportedNetwork: (network: string) => network is Network;
   /** The list of all supported networks. */
   availableNetworks: readonly Network[];
+}
+
+export interface UseNetworkSwitcherOptions {
+  /** Optional callback fired when the network changes. */
+  onNetworkChange?: (newNetwork: Network) => void;
 }
 
 /**
@@ -50,7 +55,7 @@ export interface UseNetworkSwitcherResult {
  * }
  * ```
  */
-export function useNetworkSwitcher(): UseNetworkSwitcherResult {
+export function useNetworkSwitcher(options?: UseNetworkSwitcherOptions): UseNetworkSwitcherResult {
   const ctx = useContext(StreamFiContext);
   if (!ctx) {
     throw new Error(
@@ -58,6 +63,12 @@ export function useNetworkSwitcher(): UseNetworkSwitcherResult {
       'Wrap your component tree with <StreamFiProvider> to enable reactive network switching.',
     );
   }
+
+  useEffect(() => {
+    if (ctx.network && options?.onNetworkChange) {
+      options.onNetworkChange(ctx.network);
+    }
+  }, [ctx.network, options]);
 
   return {
     network: ctx.network,

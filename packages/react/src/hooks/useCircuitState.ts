@@ -11,6 +11,8 @@ export interface UseCircuitStateResult {
   status: CircuitStatus;
   /** Whether the circuit is currently open (degraded). */
   isDegraded: boolean;
+  /** The active RPC URL (scope) being monitored. */
+  activeRpcUrl: string;
   /** Manually reset the circuit for this scope. */
   reset: () => void;
 }
@@ -43,6 +45,7 @@ export function useCircuitState(scope: string): UseCircuitStateResult {
   return {
     status,
     isDegraded: status.state === 'open',
+    activeRpcUrl: scope,
     reset,
   };
 }
